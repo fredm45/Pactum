@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seedance 3.0 Pro — Operations</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #e0e0e0; padding: 20px; }
+  h1 { color: #7c3aed; margin-bottom: 8px; }
+  .subtitle { color: #888; margin-bottom: 24px; }
+  .orders { display: flex; flex-direction: column; gap: 16px; }
+  .order-card {
+    background: #1a1a2e; border: 1px solid #333; border-radius: 12px; padding: 20px;
+  }
+  .order-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .order-id { font-family: monospace; color: #7c3aed; font-size: 14px; }
+  .status { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; }
+  .status-paid { background: #fbbf2433; color: #fbbf24; }
+  .status-processing { background: #3b82f633; color: #3b82f6; }
+  .meta { font-size: 13px; color: #999; margin-bottom: 8px; }
+  .query { background: #111; border-radius: 8px; padding: 12px; margin: 8px 0; font-size: 14px; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto; }
+  .deliver-form { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
+  .deliver-form input[type="file"] { flex: 1; }
+  .btn {
+    background: #7c3aed; color: white; border: none; padding: 8px 20px; border-radius: 8px;
+    cursor: pointer; font-weight: 600; font-size: 14px;
+  }
+  .btn:hover { background: #6d28d9; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .empty { text-align: center; padding: 60px 20px; color: #666; }
+  .toast {
+    position: fixed; bottom: 20px; right: 20px; padding: 12px 24px; border-radius: 8px;
+    font-weight: 600; display: none; z-index: 100;
+  }
+  .toast-success { background: #10b981; color: white; }
+  .toast-error { background: #ef4444; color: white; }
+  .loading { text-align: center; padding: 40px; color: #666; }
+</style>
+</head>
+<body>
+  <h1>Seedance 3.0 Pro</h1>
+  <p class="subtitle">Operations Dashboard — Upload generated videos to deliver orders</p>
+
+  <div id="orders" class="orders">
+    <div class="loading">Loading orders...</div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+<script>
+async function loadOrders() {
+  const container = document.getElementById('orders');
+  try {
+    const resp = await fetch('/api/orders');
+    const data = await resp.json();
+    if (!data.orders || data.orders.length === 0) {
+      container.innerHTML = '<div class="empty">No pending orders</div>';
+      return;
+    }
+    container.innerHTML = data.orders.map(o => {
+      const itemName = o.items ? o.items.name : '?';
+      const statusClass = o.status === 'paid' ? 'status-paid' : 'status-processing';
+      return `
+        <div class="order-card" id="order-${o.order_id}">
+          <div class="order-header">
+            <span class="order-id">${o.order_id.slice(0, 8)}...</span>
+            <span class="status ${statusClass}">${o.status}</span>
+          </div>
+          <div class="meta"><strong>${itemName}</strong> — $${o.amount} USDC</div>
+          <div class="meta">Buyer: ${o.buyer_wallet.slice(0, 6)}...${o.buyer_wallet.slice(-4)}</div>
+          ${o.buyer_query ? `<div class="query">${escapeHtml(o.buyer_query)}</div>` : ''}
+          <form class="deliver-form" onsubmit="deliver(event, '${o.order_id}')">
+            <input type="file" name="file" accept="video/*" required>
+            <button type="submit" class="btn">Deliver</button>
+          </form>
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    container.innerHTML = `<div class="empty">Error loading orders: ${e.message}</div>`;
+  }
+}
+
+function escapeHtml(text) {
+  const d = document.createElement('div');
+  d.textContent = text;
+  return d.innerHTML;
+}
+
+async function deliver(event, orderId) {
+  event.preventDefault();
+  const form = event.target;
+  const btn = form.querySelector('button');
+  const fileInput = form.querySelector('input[type="file"]');
+  if (!fileInput.files.length) return;
+
+  btn.disabled = true;
+  btn.textContent = 'Uploading...';
+
+  const fd = new FormData();
+  fd.append('file', fileInput.files[0]);
+
+  try {
+    const resp = await fetch(`/api/deliver/${orderId}`, { method: 'POST', body: fd });
+    if (!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err.detail || err.error || 'Delivery failed');
+    }
+    showToast('Delivered successfully!', 'success');
+    document.getElementById(`order-${orderId}`).remove();
+  } catch (e) {
+    showToast(`Error: ${e.message}`, 'error');
+    btn.disabled = false;
+    btn.textContent = 'Deliver';
+  }
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast toast-${type}`;
+  t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 4000);
+}
+
+loadOrders();
+setInterval(loadOrders, 30000);
+</script>
+</body>
+</html>

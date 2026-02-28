@@ -1,0 +1,11 @@
+Model Information:
+* title:	New Analityks Desk TZ 4
+* source:	https://sketchfab.com/3d-models/new-analityks-desk-tz-4-a0b7c3b97b3b43988ad6d22cc182c0a6
+* author:	Max-LaMA (https://sketchfab.com/maksym.lyakhov)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "New Analityks Desk TZ 4" (https://sketchfab.com/3d-models/new-analityks-desk-tz-4-a0b7c3b97b3b43988ad6d22cc182c0a6) by Max-LaMA (https://sketchfab.com/maksym.lyakhov) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
